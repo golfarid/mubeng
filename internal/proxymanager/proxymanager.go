@@ -16,8 +16,9 @@ func init() {
 
 // ProxyManager defines the proxy list and current proxy position
 type ProxyManager struct {
-	Proxies      []string
-	CurrentIndex int
+	Proxies        []string
+	CurrentIndex   int
+	SessionProxies map[string]string
 }
 
 // New initialize ProxyManager
@@ -32,6 +33,7 @@ func New(filename string) (*ProxyManager, error) {
 
 	manager := &ProxyManager{}
 	manager.CurrentIndex = -1
+	manager.SessionProxies = make(map[string]string)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -66,4 +68,15 @@ func (p *ProxyManager) NextProxy() string {
 // RandomProxy will choose a proxy randomly from the list
 func (p *ProxyManager) RandomProxy() string {
 	return p.Proxies[rand.Intn(len(p.Proxies))]
+}
+
+func (p *ProxyManager) SessionProxy(sessionId string) string {
+	sessionProxy, isSessionExist := p.SessionProxies[sessionId]
+	if isSessionExist {
+		return sessionProxy
+	} else {
+		proxy := p.RandomProxy()
+		p.SessionProxies[sessionId] = proxy
+		return proxy
+	}
 }

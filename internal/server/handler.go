@@ -30,6 +30,12 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 			rotate = p.Options.ProxyManager.RandomProxy()
 		}
 
+		if p.Options.Method == "session" {
+			sessionId := ctx.Req.Header.Get("Proxy-Session-Id")
+			rotate = p.Options.ProxyManager.SessionProxy(sessionId)
+			ctx.Req.Header.Del("Proxy-Session-Id")
+		}
+
 		if ok >= p.Options.Rotate {
 			ok = 1
 		}
