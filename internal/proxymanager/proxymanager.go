@@ -75,7 +75,7 @@ func (p *ProxyManager) SessionProxy(sessionId string) string {
 	if isSessionExist {
 		return sessionProxy
 	} else {
-		proxy := p.RandomProxy()
+		proxy := p.NextProxy()
 		p.SessionProxies[sessionId] = proxy
 		return proxy
 	}
