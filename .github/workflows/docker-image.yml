@@ -1,18 +1,29 @@
-name: Docker Image CI
+name: Build Docker Image
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches:
+      - master
+
+env:
+  REGISTRY_PATH: cr.yandex/crp0h3dt2nmf9lkv89ir/mayak-mubeng
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v2
+    - name: auth in yandex registry
+      env:
+        YC_DOCKER_PUSH: ${{ secrets.YC_DOCKER_PUSH }}
+      run: echo "${YC_DOCKER_PUSH}" | docker login --username json_key --password-stdin cr.yandex
+
+    - name: Pull docker image from registry (for cache)
+      run: docker pull "${REGISTRY_PATH}:latest" || true # don't crash on the first run
+
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag mayak-mubeng:$(date +%s)
+      run: docker build --cache-from "${REGISTRY_PATH}:latest" --tag "${REGISTRY_PATH}:${GITHUB_SHA}" --tag "${REGISTRY_PATH}:latest" .
+
+    - name: Push docker image to registry
+      run: docker push "${REGISTRY_PATH}:${GITHUB_SHA}"
+    - run: docker push "${REGISTRY_PATH}:latest"
