@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sync"
 	"time"
 
 	"ktbs.dev/mubeng/pkg/mubeng"
@@ -16,6 +17,7 @@ func init() {
 
 // ProxyManager defines the proxy list and current proxy position
 type ProxyManager struct {
+	sync.RWMutex
 	Proxies        []string
 	CurrentIndex   int
 	SessionProxies map[string]string
@@ -71,12 +73,16 @@ func (p *ProxyManager) RandomProxy() string {
 }
 
 func (p *ProxyManager) SessionProxy(sessionId string) string {
+	p.RLock()
 	sessionProxy, isSessionExist := p.SessionProxies[sessionId]
+	p.RUnlock()
 	if isSessionExist {
 		return sessionProxy
 	} else {
 		proxy := p.NextProxy()
+		p.RLock()
 		p.SessionProxies[sessionId] = proxy
+		p.RUnlock()
 		return proxy
 	}
 }
