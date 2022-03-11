@@ -27,3 +27,25 @@ jobs:
     - name: Push docker image to registry
       run: docker push "${REGISTRY_PATH}:${GITHUB_SHA}"
     - run: docker push "${REGISTRY_PATH}:latest"
+    
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      DEPLOY_HOST: mayak@178.154.229.101
+      DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+       
+    steps:
+    - uses: actions/checkout@v2
+    - name: Create private SSH key
+      run: echo "${DEPLOY_KEY}" > id_rsa && chmod 0600 id_rsa
+
+    - name: Remote pull of docker images on $DEPLOY_HOST
+      run: ssh -o "StrictHostKeyChecking no" -i id_rsa "${DEPLOY_HOST}" "docker-compose pull"
+    - name: Restart serices on $DEPLOY_HOST2
+      run: ssh -o "StrictHostKeyChecking no" -i id_rsa "${DEPLOY_HOST}" "docker-compose up -d"
+
+    - name: Cleanup stopped containers on $DEPLOY_HOST
+      run: ssh -o "StrictHostKeyChecking no" -i id_rsa "${DEPLOY_HOST}" "docker container prune --force --filter \"until=$(date +'%Y-%m-%dT%H:%M:%S' --date='-2 days')\""
+    - name: Cleanup untagged images older than 7 days on $DEPLOY_HOST
+      run: ssh -o "StrictHostKeyChecking no" -i id_rsa "${DEPLOY_HOST}" "docker image prune --force --filter \"until=$(date +'%Y-%m-%dT%H:%M:%S' --date='-7 days')\""
