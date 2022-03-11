@@ -6,7 +6,7 @@ on:
       - master
 
 env:
-  REGISTRY_PATH: cr.yandex/crp0h3dt2nmf9lkv89ir/mayak-mubeng
+  REGISTRY_PATH: cr.yandex/crptqdm2r1qrasr6n9vm/mayak-mubeng
 
 jobs:
   build:
