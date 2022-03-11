@@ -80,9 +80,9 @@ func (p *ProxyManager) SessionProxy(sessionId string) string {
 		return sessionProxy
 	} else {
 		proxy := p.NextProxy()
-		p.RLock()
+		p.Lock()
 		p.SessionProxies[sessionId] = proxy
-		p.RUnlock()
+		p.Unlock()
 		return proxy
 	}
 }
