@@ -15,12 +15,17 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+type Session struct {
+	Proxy     string
+	Timestamp time.Time
+}
+
 // ProxyManager defines the proxy list and current proxy position
 type ProxyManager struct {
 	sync.RWMutex
-	Proxies        []string
-	CurrentIndex   int
-	SessionProxies map[string]string
+	Proxies      []string
+	CurrentIndex int
+	Sessions     map[string]*Session
 }
 
 // New initialize ProxyManager
@@ -35,7 +40,7 @@ func New(filename string) (*ProxyManager, error) {
 
 	manager := &ProxyManager{}
 	manager.CurrentIndex = -1
-	manager.SessionProxies = make(map[string]string)
+	manager.Sessions = make(map[string]*Session)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -73,16 +78,45 @@ func (p *ProxyManager) RandomProxy() string {
 }
 
 func (p *ProxyManager) SessionProxy(sessionId string) string {
+	p.cleanupOrphanedSessions()
+
 	p.RLock()
-	sessionProxy, isSessionExist := p.SessionProxies[sessionId]
+	session, isSessionExist := p.Sessions[sessionId]
 	p.RUnlock()
 	if isSessionExist {
-		return sessionProxy
+		updatedSession := &Session{
+			Proxy:     session.Proxy,
+			Timestamp: time.Now(),
+		}
+		
+		p.Lock()
+		p.Sessions[sessionId] = updatedSession
+		p.Unlock()
+
+		return session.Proxy
 	} else {
 		proxy := p.NextProxy()
 		p.Lock()
-		p.SessionProxies[sessionId] = proxy
+
+		newSession := &Session{
+			Proxy:     proxy,
+			Timestamp: time.Now(),
+		}
+
+		p.Sessions[sessionId] = newSession
 		p.Unlock()
 		return proxy
 	}
+}
+
+func (p *ProxyManager) cleanupOrphanedSessions() {
+	now := time.Now()
+	p.Lock()
+	for sessionId, session := range p.Sessions {
+		diff := now.Sub(session.Timestamp)
+		if diff.Minutes() > 1 {
+			delete(p.Sessions, sessionId)
+		}
+	}
+	p.Unlock()
 }
