@@ -35,6 +35,8 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 			if sessionId != "" {
 				rotate = p.Options.ProxyManager.SessionProxy(sessionId)
 				ctx.Req.Header.Del("Proxy-Session-Id")
+			} else {
+				panic("Session id is not specified!")
 			}
 		}
 
