@@ -88,7 +88,7 @@ func (p *ProxyManager) SessionProxy(sessionId string) string {
 			Proxy:     session.Proxy,
 			Timestamp: time.Now(),
 		}
-		
+
 		p.Lock()
 		p.Sessions[sessionId] = updatedSession
 		p.Unlock()
@@ -114,7 +114,7 @@ func (p *ProxyManager) cleanupOrphanedSessions() {
 	p.Lock()
 	for sessionId, session := range p.Sessions {
 		diff := now.Sub(session.Timestamp)
-		if diff.Minutes() > 1 {
+		if diff.Minutes() > 10 {
 			delete(p.Sessions, sessionId)
 		}
 	}
