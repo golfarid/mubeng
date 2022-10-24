@@ -10,6 +10,7 @@ import (
 
 	"github.com/elazarl/goproxy"
 	"ktbs.dev/mubeng/common"
+	"ktbs.dev/mubeng/pkg/helper"
 	"ktbs.dev/mubeng/pkg/mubeng"
 )
 
@@ -36,7 +37,8 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 				rotate = p.Options.ProxyManager.SessionProxy(sessionId)
 				ctx.Req.Header.Del("Proxy-Session-Id")
 			} else {
-				panic("Session id is not specified!")
+				log.Errorf("Missed \"Proxy-Session-Id\" header")
+				return req, goproxy.NewResponse(req, mime, http.StatusBadRequest, "Something wrongs with your request")
 			}
 		}
 
@@ -47,6 +49,7 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 		ok++
 	}
 
+	rotate = helper.EvalFunc(rotate)
 	resChan := make(chan *http.Response)
 	errChan := make(chan error, 1)
 

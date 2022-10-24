@@ -10,6 +10,7 @@ import (
 
 	"github.com/logrusorgru/aurora"
 	"ktbs.dev/mubeng/common"
+	"ktbs.dev/mubeng/pkg/helper"
 	"ktbs.dev/mubeng/pkg/mubeng"
 )
 
@@ -24,8 +25,8 @@ func Do(opt *common.Options) {
 		go func(address string) {
 			defer wg.Done()
 
-			cc, err := check(address, opt.Timeout)
-			if len(opt.Countries) > 0 && !isMatchCC(opt.Countries, cc) {
+			addr, err := check(address, opt.Timeout)
+			if len(opt.Countries) > 0 && !isMatchCC(opt.Countries, addr.CC) {
 				return
 			}
 
@@ -34,13 +35,13 @@ func Do(opt *common.Options) {
 					fmt.Printf("[%s] %s\n", aurora.Red("DIED"), address)
 				}
 			} else {
-				fmt.Printf("[%s] [%s] %s\n", aurora.Green("LIVE"), aurora.Magenta(cc), address)
+				fmt.Printf("[%s] [%s] [%s] %s\n", aurora.Green("LIVE"), aurora.Magenta(addr.CC), aurora.Cyan(addr.IP), address)
 
 				if opt.Output != "" {
 					fmt.Fprintf(opt.Result, "%s\n", address)
 				}
 			}
-		}(proxy)
+		}(helper.EvalFunc(proxy))
 	}
 
 	wg.Wait()
@@ -60,15 +61,15 @@ func isMatchCC(cc []string, code string) bool {
 	return false
 }
 
-func check(address string, timeout time.Duration) (string, error) {
+func check(address string, timeout time.Duration) (myIP, error) {
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
-		return "", err
+		return myip, err
 	}
 
 	tr, err := mubeng.Transport(address)
 	if err != nil {
-		return "", err
+		return myip, err
 	}
 
 	proxy := &mubeng.Proxy{
@@ -82,20 +83,20 @@ func check(address string, timeout time.Duration) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return myip, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return myip, err
 	}
 
 	err = json.Unmarshal([]byte(body), &myip)
 	if err != nil {
-		return "", err
+		return myip, err
 	}
 
 	defer resp.Body.Close()
 
-	return myip.CC, nil
+	return myip, nil
 }
