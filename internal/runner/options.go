@@ -2,6 +2,9 @@ package runner
 
 import (
 	"flag"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
 	"time"
 
 	"github.com/projectdiscovery/gologger"
@@ -18,6 +21,9 @@ func Options() *common.Options {
 
 	flag.StringVar(&opt.Address, "a", "", "")
 	flag.StringVar(&opt.Address, "address", "", "")
+
+	flag.StringVar(&opt.ApiAddress, "p", "", "")
+	flag.StringVar(&opt.ApiAddress, "api", "", "")
 
 	flag.StringVar(&opt.Auth, "A", "", "")
 	flag.StringVar(&opt.Auth, "auth", "", "")
@@ -73,6 +79,13 @@ func Options() *common.Options {
 			gologger.Fatal().Msgf("Error! %s.", err)
 		}
 	}
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	opt.ApiSecret = os.Getenv("API_SECRET")
 
 	if err := validate(opt); err != nil {
 		gologger.Fatal().Msgf("Error! %s.", err)

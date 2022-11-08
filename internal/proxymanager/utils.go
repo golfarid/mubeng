@@ -40,6 +40,7 @@ func (p *ProxyManager) Watch() (*fsnotify.Watcher, error) {
 
 // Reload proxy pool
 func (p *ProxyManager) Reload() error {
+	p.cleanupSessions(false)
 	i := p.CurrentIndex
 
 	p, err := New(p.filepath)
@@ -52,7 +53,7 @@ func (p *ProxyManager) Reload() error {
 }
 
 func (p *ProxyManager) SessionProxy(sessionId string) string {
-	p.cleanupOrphanedSessions()
+	p.cleanupSessions(true)
 
 	p.RLock()
 	session, isSessionExist := p.Sessions[sessionId]
@@ -83,12 +84,18 @@ func (p *ProxyManager) SessionProxy(sessionId string) string {
 	}
 }
 
-func (p *ProxyManager) cleanupOrphanedSessions() {
-	now := time.Now()
+func (p *ProxyManager) cleanupSessions(orphaned bool) {
 	p.Lock()
-	for sessionId, session := range p.Sessions {
-		diff := now.Sub(session.Timestamp)
-		if diff.Minutes() > 10 {
+	if orphaned {
+		now := time.Now()
+		for sessionId, session := range p.Sessions {
+			diff := now.Sub(session.Timestamp)
+			if diff.Minutes() > 10 {
+				delete(p.Sessions, sessionId)
+			}
+		}
+	} else {
+		for sessionId := range p.Sessions {
 			delete(p.Sessions, sessionId)
 		}
 	}

@@ -43,9 +43,9 @@ func New(filename string) (*ProxyManager, error) {
 	}
 	defer file.Close()
 
+	manager := &ProxyManager{}
 	manager.Proxies = []string{}
 	manager.filepath = filename
-	manager := &ProxyManager{}
 	manager.CurrentIndex = -1
 	manager.Sessions = make(map[string]*Session)
 
