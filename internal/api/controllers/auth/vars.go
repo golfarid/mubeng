@@ -5,5 +5,5 @@ import (
 )
 
 var (
-	log          *logo.Logger
+	log *logo.Logger
 )

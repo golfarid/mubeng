@@ -29,7 +29,7 @@ type ProxyDto struct {
 func (controller *Controller) Handler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		controller.getProxies(w, r)
+		controller.getProxies(w)
 	case "POST":
 		controller.createProxies(w, r)
 	case "DELETE":
@@ -37,7 +37,7 @@ func (controller *Controller) Handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (controller *Controller) getProxies(w http.ResponseWriter, r *http.Request) {
+func (controller *Controller) getProxies(w http.ResponseWriter) {
 	fmt.Printf("got /get proxies request\n")
 	proxies, err := controller.proxyManager.ReadProxies()
 	if err != nil {
@@ -51,7 +51,11 @@ func (controller *Controller) getProxies(w http.ResponseWriter, r *http.Request)
 		}
 
 		j, _ := json.MarshalIndent(proxiesDto, "", "  ")
-		io.WriteString(w, string(j))
+		_, err = io.WriteString(w, string(j))
+		if err != nil {
+			response := "Response serialization failed"
+			http.Error(w, response, http.StatusInternalServerError)
+		}
 	}
 }
 

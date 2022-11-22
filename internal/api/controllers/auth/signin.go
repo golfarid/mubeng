@@ -35,8 +35,7 @@ func (controller *Controller) signIn(w http.ResponseWriter, r *http.Request) {
 	// Get the JSON body and decode into credentials
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
-		// If the structure of the body is wrong, return an HTTP error
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "Incorrect request", http.StatusBadRequest)
 		return
 	}
 
@@ -46,16 +45,19 @@ func (controller *Controller) signIn(w http.ResponseWriter, r *http.Request) {
 
 		signedToken, err := token.SignedString([]byte(controller.opt.ApiSecret))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Error generating JWT token: " + err.Error()))
+			response := "Error generating JWT token: " + err.Error()
+			http.Error(w, response, http.StatusInternalServerError)
 		} else {
 			w.Header().Set("Authorization", "Bearer "+signedToken)
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("Token: " + signedToken))
+			_, err = w.Write([]byte("Token: " + signedToken))
+			if err != nil {
+				response := "Token write error" + err.Error()
+				http.Error(w, response, http.StatusInternalServerError)
+			}
 		}
 	} else {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Name and password do not match"))
-		return
+		response := "Wrong username or password"
+		http.Error(w, response, http.StatusUnauthorized)
 	}
 }
