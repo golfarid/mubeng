@@ -23,22 +23,17 @@ func (p *Proxy) onRequest(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Reque
 
 	// Rotate proxy IP for every AFTER request
 	if (rotate == "") || (ok >= p.Options.Rotate) {
-		if p.Options.Method == "sequent" {
-			rotate = p.Options.ProxyManager.NextProxy()
-		}
+		sessionId := ctx.Req.Header.Get("Proxy-Session-Id")
+		if sessionId != "" {
+			rotate = p.Options.ProxyManager.SessionProxy(sessionId)
+			ctx.Req.Header.Del("Proxy-Session-Id")
+		} else {
+			if p.Options.Method == "sequent" {
+				rotate = p.Options.ProxyManager.NextProxy()
+			}
 
-		if p.Options.Method == "random" {
-			rotate = p.Options.ProxyManager.RandomProxy()
-		}
-
-		if p.Options.Method == "session" {
-			sessionId := ctx.Req.Header.Get("Proxy-Session-Id")
-			if sessionId != "" {
-				rotate = p.Options.ProxyManager.SessionProxy(sessionId)
-				ctx.Req.Header.Del("Proxy-Session-Id")
-			} else {
-				log.Errorf("Missed \"Proxy-Session-Id\" header")
-				return req, goproxy.NewResponse(req, mime, http.StatusBadRequest, "Something wrongs with your request")
+			if p.Options.Method == "random" {
+				rotate = p.Options.ProxyManager.RandomProxy()
 			}
 		}
 
