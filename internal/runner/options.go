@@ -22,9 +22,6 @@ func Options() *common.Options {
 	flag.StringVar(&opt.Address, "a", "", "")
 	flag.StringVar(&opt.Address, "address", "", "")
 
-	flag.StringVar(&opt.ApiAddress, "p", "", "")
-	flag.StringVar(&opt.ApiAddress, "api", "", "")
-
 	flag.StringVar(&opt.Auth, "A", "", "")
 	flag.StringVar(&opt.Auth, "auth", "", "")
 

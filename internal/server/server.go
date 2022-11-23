@@ -1,6 +1,10 @@
 package server
 
 import (
+	"github.com/gorilla/mux"
+	"ktbs.dev/mubeng/internal/api/controllers/auth"
+	"ktbs.dev/mubeng/internal/api/controllers/proxies"
+	jwtAuthMiddleware "ktbs.dev/mubeng/internal/api/middlewares/auth"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,7 +40,22 @@ func Run(opt *common.Options) {
 	handler.HTTPProxy.OnRequest().DoFunc(handler.onRequest)
 	handler.HTTPProxy.OnRequest().HandleConnectFunc(handler.onConnect)
 	handler.HTTPProxy.OnResponse().DoFunc(handler.onResponse)
-	handler.HTTPProxy.NonproxyHandler = http.HandlerFunc(nonProxy)
+
+	router := mux.NewRouter().StrictSlash(true)
+	apiRouter := router.PathPrefix("/api").Subrouter()
+
+	authMiddleware := jwtAuthMiddleware.New(opt)
+	apiRouter.Use(authMiddleware.Handle)
+
+	authController := auth.New(opt)
+	proxiesController := proxies.New(opt, opt.ProxyManager)
+
+	// replace http.HandleFunc with myRouter.HandleFunc
+	router.HandleFunc("/auth/sign_in", authController.Handler).Methods("POST")
+	router.HandleFunc("/", nonProxy)
+	apiRouter.HandleFunc("/proxies", proxiesController.Handler).Methods("GET", "POST")
+	apiRouter.HandleFunc("/proxies/{index}", proxiesController.Handler).Methods("DELETE")
+	handler.HTTPProxy.NonproxyHandler = router
 
 	server = &http.Server{
 		Addr:    opt.Address,
