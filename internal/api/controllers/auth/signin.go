@@ -18,6 +18,10 @@ type Credentials struct {
 	Username string `json:"username"`
 }
 
+type Authorization struct {
+	Token string `json:"token"`
+}
+
 func New(opt *common.Options) *Controller {
 	log = utils.Logger(opt.Output)
 	return &Controller{opt: opt}
@@ -50,7 +54,8 @@ func (controller *Controller) signIn(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Header().Set("Authorization", "Bearer "+signedToken)
 			w.WriteHeader(http.StatusOK)
-			_, err = w.Write([]byte("Token: " + signedToken))
+			j, _ := json.MarshalIndent(Authorization{Token: signedToken}, "", "  ")
+			_, err = w.Write(j)
 			if err != nil {
 				response := "Token write error" + err.Error()
 				http.Error(w, response, http.StatusInternalServerError)

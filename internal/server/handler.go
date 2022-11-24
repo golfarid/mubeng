@@ -158,5 +158,10 @@ func nonProxy(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	http.Error(w, "This is a mubeng proxy server. Does not respond to non-proxy requests.", 500)
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte("This is a mubeng proxy server."))
+	if err != nil {
+		response := "Write response error" + err.Error()
+		http.Error(w, response, http.StatusInternalServerError)
+	}
 }
