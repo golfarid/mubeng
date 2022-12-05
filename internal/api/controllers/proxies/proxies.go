@@ -3,13 +3,11 @@ package proxies
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"ktbs.dev/mubeng/common"
 	"ktbs.dev/mubeng/internal/api/utils"
 	"ktbs.dev/mubeng/internal/proxymanager"
 	"net/http"
-	"strconv"
 )
 
 type Controller struct {
@@ -22,8 +20,7 @@ func New(opt *common.Options, proxyManager *proxymanager.ProxyManager) *Controll
 }
 
 type ProxyDto struct {
-	Index int    `json:"index"`
-	Url   string `json:"url"`
+	Url string `json:"url"`
 }
 
 func (controller *Controller) Handler(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +30,7 @@ func (controller *Controller) Handler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		controller.createProxies(w, r)
 	case "DELETE":
-		controller.deleteProxy(w, r)
+		controller.deleteProxies(w, r)
 	}
 }
 
@@ -47,7 +44,7 @@ func (controller *Controller) getProxies(w http.ResponseWriter) {
 	} else {
 		var proxiesDto []ProxyDto
 		for i := 0; i < len(proxies); i++ {
-			proxiesDto = append(proxiesDto, ProxyDto{Index: i + 1, Url: proxies[i]})
+			proxiesDto = append(proxiesDto, ProxyDto{Url: proxies[i]})
 		}
 
 		j, _ := json.MarshalIndent(proxiesDto, "", "  ")
@@ -77,22 +74,16 @@ func (controller *Controller) createProxies(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (controller *Controller) deleteProxy(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("got /delete proxy request\n")
-	vars := mux.Vars(r)
-	strIndex, ok := vars["index"]
-	if !ok {
-		log.Error("Index is missing in parameters")
-		response := "Missed index parameter"
-		http.Error(w, response, http.StatusBadRequest)
+func (controller *Controller) deleteProxies(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("got /delete proxies request\n")
+	decoder := json.NewDecoder(r.Body)
+	var urls []string
+	err := decoder.Decode(&urls)
+	if err != nil {
+		response := "Can't parse body"
+		http.Error(w, response, http.StatusInternalServerError)
 	} else {
-		index, err := strconv.Atoi(strIndex)
-		if err != nil {
-			log.Error("Failed to convert index to int")
-			response := "Index must be number"
-			http.Error(w, response, http.StatusBadRequest)
-		}
-		err = controller.proxyManager.DeleteProxy(index - 1)
+		err = controller.proxyManager.DeleteProxies(urls)
 		if err != nil {
 			log.Error(err)
 			response := "Can't write proxies"

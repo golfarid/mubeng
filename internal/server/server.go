@@ -44,17 +44,17 @@ func Run(opt *common.Options) {
 	router := mux.NewRouter().StrictSlash(true)
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
-	authMiddleware := jwtAuthMiddleware.New(opt)
-	apiRouter.Use(authMiddleware.Handle)
+	if opt.Auth != "" {
+		authMiddleware := jwtAuthMiddleware.New(opt)
+		apiRouter.Use(authMiddleware.Handle)
+		authController := auth.New(opt)
+		router.HandleFunc("/auth/sign_in", authController.Handler).Methods("POST")
+	}
 
-	authController := auth.New(opt)
 	proxiesController := proxies.New(opt, opt.ProxyManager)
+	apiRouter.HandleFunc("/proxies", proxiesController.Handler).Methods("GET", "POST", "DELETE")
 
-	// replace http.HandleFunc with myRouter.HandleFunc
-	router.HandleFunc("/auth/sign_in", authController.Handler).Methods("POST")
 	router.HandleFunc("/", nonProxy)
-	apiRouter.HandleFunc("/proxies", proxiesController.Handler).Methods("GET", "POST")
-	apiRouter.HandleFunc("/proxies/{index}", proxiesController.Handler).Methods("DELETE")
 	handler.HTTPProxy.NonproxyHandler = router
 
 	server = &http.Server{

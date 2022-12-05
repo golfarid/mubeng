@@ -49,7 +49,7 @@ func (p *ProxyManager) WriteProxies(urls []string) error {
 	return nil
 }
 
-func (p *ProxyManager) DeleteProxy(index int) error {
+func (p *ProxyManager) DeleteProxies(urls []string) error {
 	file, err := os.Open(p.filepath)
 	if err != nil {
 		return err
@@ -62,7 +62,7 @@ func (p *ProxyManager) DeleteProxy(index int) error {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
-		if currentIndex != index {
+		if !isElementExist(urls, line) {
 			_, err := buf.WriteString(line + "\n")
 			if err != nil {
 				return err
@@ -94,4 +94,13 @@ func (p *ProxyManager) DeleteProxy(index int) error {
 		return err
 	}
 	return nil
+}
+
+func isElementExist(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }
